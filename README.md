@@ -1,2 +1,13 @@
 # igpsport-downloader
-py script to download igpsport fit files
+
+A standalone Python script to automatically fetch your latest cycling activities as .fit files from the iGPSport (Europe/Global) platform. It is designed to be run periodically (e.g., via a Cron job) and features automatic deduplication, HTTP retries, and log rotation.
+
+# Prerequisites
+
+The following Python packages:
+*  requests
+*  python-dotenv
+
+# Configuration
+The script uses environment variables to keep your credentials secure. You need to create a .env file in the same directory as the script.
+
