@@ -11,3 +11,6 @@ The following Python packages:
 # Configuration
 The script uses environment variables to keep your credentials secure. You need to create a .env file in the same directory as the script.
 
+# Information
+
+As a transparency note, the tool is vibe coded with GitHub Copilot.
