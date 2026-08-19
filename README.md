@@ -1,6 +1,6 @@
 # igpsport-downloader
 
-A standalone Python script to automatically fetch your latest cycling activities as .fit files from the iGPSport (Europe/Global) platform. It is designed to be run periodically (e.g., via a Cron job) and features automatic deduplication, HTTP retries, and log rotation.
+A standalone Python script to automatically fetch your latest cycling activities as .fit files from the iGPSport (Europe/Global) platform. It is designed to be run periodically (e.g., via a Cron job) and features automatic deduplication, HTTP retries, and log rotation. It checks the last 20 activities, so it should typically run at least frequently enough to cause overlaps.
 
 # Prerequisites
 
