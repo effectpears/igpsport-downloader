@@ -358,6 +358,7 @@ def main():
                 logger.info(f"  Status: ✓ Successfully downloaded\n")
                 success_count += 1
                 downloaded_ids.add(activity_id)
+                save_sync_state(downloaded_ids)  # <--- DIESE ZEILE HINZUFÜGEN
             else:
                 logger.error(f"  Status: ✗ Download failed\n")
                 error_count += 1
