@@ -1,9 +1,6 @@
 services:
   igpsport-downloader:
-    build:
-      context: .
-      dockerfile: Dockerfile
-
+    image: ghcr.io/effectpears/igpsport-downloader:latest
     container_name: igpsport-downloader
 
     env_file:
