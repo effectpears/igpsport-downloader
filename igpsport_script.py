@@ -270,15 +270,22 @@ def get_downloaded_ids() -> set:
 
 
 def save_sync_state(downloaded_ids: set):
-    """Save the sync state"""
+    """Save the sync state using atomic write to prevent JSON corruption."""
     try:
+        temp_file = f"{SYNC_STATE_FILE}.tmp"
         state = {
             "downloaded_ids": list(downloaded_ids),
             "timestamp": datetime.now().isoformat()
         }
         
-        with open(SYNC_STATE_FILE, 'w') as f:
+        # 1. In temporäre Datei schreiben
+        with open(temp_file, 'w') as f:
             json.dump(state, f, indent=2)
+            f.flush()
+            os.fsync(f.fileno())  # Erzwingt das Schreiben auf die Festplatte
+
+        # 2. Atomar ersetzen (verhindert kaputte Dateien bei Container-Stops)
+        os.replace(temp_file, SYNC_STATE_FILE)
             
         logger.info(f"✓ Sync state saved (Total downloaded IDs: {len(downloaded_ids)})")
     except Exception as e:
