@@ -1,0 +1,21 @@
+services:
+  igpsport-downloader:
+    build:
+      context: .
+      dockerfile: Dockerfile
+
+    container_name: igpsport-downloader
+
+    env_file:
+      - .env
+
+    environment:
+      TZ: Europe/Berlin
+      IGPSPORT_DOWNLOAD_DIR: /app/fit_files
+      IGPSPORT_LOG_DIR: /app/logs
+
+    volumes:
+      - ./watch:/app/fit_files
+      - ./logs:/app/logs
+
+    restart: unless-stopped
