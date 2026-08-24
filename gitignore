@@ -1,0 +1,25 @@
+# Zugangsdaten
+.env
+.env.*
+!.env.example
+
+# Heruntergeladene FIT-Dateien
+fit_files/
+*.fit
+
+# Logs
+logs/
+*.log
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+
+# Entwicklungsumgebungen
+.vscode/
+.idea/
+
+# Betriebssystem
+.DS_Store
+Thumbs.db
