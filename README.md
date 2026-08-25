@@ -34,3 +34,5 @@ RUN_INTERVAL_SECONDS=3600        # => every 1h
 # Information
 
 As a transparency note, the tool is vibe coded with GitHub Copilot.
+
+## Not affiliated with igpsport
