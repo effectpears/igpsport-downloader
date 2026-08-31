@@ -5,8 +5,9 @@ AI-Information: vibe coded with github copilot
 Download FIT files from iGPSport (Global/Europe) - Standalone Operation
 Captures late uploads by tracking the sync state.
 
-- Checks the last 20 activities
+- Checks the last N activities (configured via IGPSPORT_ACTIVITY_LIMIT)
 - Uses .env file for configuration
+- Logging completely disabled
 """
 
 import requests
@@ -15,7 +16,6 @@ from datetime import datetime
 import os
 from pathlib import Path
 import logging
-from logging.handlers import RotatingFileHandler
 from dotenv import load_dotenv
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
@@ -27,7 +27,7 @@ load_dotenv()
 USERNAME = os.getenv("IGPSPORT_USERNAME")
 PASSWORD = os.getenv("IGPSPORT_PASSWORD")
 DOWNLOAD_DIR = os.getenv("IGPSPORT_DOWNLOAD_DIR", "./fit_files")
-LOG_DIR = os.getenv("IGPSPORT_LOG_DIR", "./logs")
+ACTIVITY_LIMIT = int(os.getenv("IGPSPORT_ACTIVITY_LIMIT", 3))
 
 # Keep the state file in the download directory so it persists with the data
 SYNC_STATE_FILE = os.path.join(DOWNLOAD_DIR, ".igpsport_sync_state.json")
@@ -35,35 +35,10 @@ SYNC_STATE_FILE = os.path.join(DOWNLOAD_DIR, ".igpsport_sync_state.json")
 if not USERNAME or not PASSWORD:
     raise ValueError("Missing IGPSPORT_USERNAME or IGPSPORT_PASSWORD in your .env file.")
 
-# ===== LOGGING SETUP =====
-Path(LOG_DIR).mkdir(parents=True, exist_ok=True)
-
+# ===== DISABLE LOGGING =====
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
-
-# Standard File Handler with rotation
-log_file_path = os.path.join(LOG_DIR, "igpsport_download.log")
-fh = RotatingFileHandler(
-    log_file_path,
-    maxBytes=1024*1024,  # 1MB
-    backupCount=1
-)
-fh.setLevel(logging.INFO)
-
-# Console Handler
-ch = logging.StreamHandler()
-ch.setLevel(logging.INFO)
-
-# Formatter
-formatter = logging.Formatter(
-    '%(asctime)s - %(levelname)s - %(message)s',
-    datefmt='%Y-%m-%d %H:%M:%S'
-)
-fh.setFormatter(formatter)
-ch.setFormatter(formatter)
-
-logger.addHandler(fh)
-logger.addHandler(ch)
+logger.addHandler(logging.NullHandler())
+logger.propagate = False
 
 # ===== EUROPE (GLOBAL) CONFIGURATION =====
 BASE_URL = "https://prod.en.igpsport.com/service"
@@ -104,7 +79,6 @@ class IGPSportClient:
         logger.info("Logging into iGPSport...")
         
         url = f"{BASE_URL}/auth/account/login"
-        # IMPORTANT: Send password in PLAINTEXT (not MD5!)
         payload = {
             "username": self.username,
             "password": self.password,
@@ -138,8 +112,8 @@ class IGPSportClient:
             return False
     
     def get_recent_activities(self) -> list:
-        """Fetch the last 20 activities"""
-        logger.info("Fetching the last 20 activities...")
+        """Fetch recent activities up to ACTIVITY_LIMIT"""
+        logger.info(f"Fetching the last {ACTIVITY_LIMIT} activities...")
         
         if not self.token:
             logger.error("Not logged in!")
@@ -149,7 +123,7 @@ class IGPSportClient:
         
         params = {
             "pageNo": 1,
-            "pageSize": 20,  # Strict limit to the last 20 activities
+            "pageSize": ACTIVITY_LIMIT,  # Dynamically set from .env
             "reqType": 0,
             "sort": 1
         }
@@ -242,7 +216,6 @@ class IGPSportClient:
                 return True
             else:
                 logger.warning(f"  ✗ Empty file: {filename}")
-                # Clean up empty file
                 os.remove(filepath)
                 return False
                 
@@ -278,13 +251,11 @@ def save_sync_state(downloaded_ids: set):
             "timestamp": datetime.now().isoformat()
         }
         
-        # 1. In temporäre Datei schreiben
         with open(temp_file, 'w') as f:
             json.dump(state, f, indent=2)
             f.flush()
-            os.fsync(f.fileno())  # Erzwingt das Schreiben auf die Festplatte
+            os.fsync(f.fileno())
 
-        # 2. Atomar ersetzen (verhindert kaputte Dateien bei Container-Stops)
         os.replace(temp_file, SYNC_STATE_FILE)
             
         logger.info(f"✓ Sync state saved (Total downloaded IDs: {len(downloaded_ids)})")
@@ -321,7 +292,7 @@ def main():
     
     logger.info("")
     
-    # Fetch the last 20 activities
+    # Fetch activities according to ACTIVITY_LIMIT
     activities = client.get_recent_activities()
     
     if not activities:
@@ -358,7 +329,7 @@ def main():
                 logger.info(f"  Status: ✓ Successfully downloaded\n")
                 success_count += 1
                 downloaded_ids.add(activity_id)
-                save_sync_state(downloaded_ids)  # <--- DIESE ZEILE HINZUFÜGEN
+                save_sync_state(downloaded_ids)
             else:
                 logger.error(f"  Status: ✗ Download failed\n")
                 error_count += 1
